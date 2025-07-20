@@ -19,7 +19,7 @@ class GCN(nn.Module):
         self.mlp = nn.Linear(c_in,c_out)
         self.dropout = dropout
         self.order = order
-        # 定义第一个可更新梯度的变量
+
         self.variable1 = torch.randn(enc_in, d_model, requires_grad=True)
         self.variable2 = torch.randn(enc_in, d_model, requires_grad=True)
         self.alpha =  1
@@ -32,8 +32,6 @@ class GCN(nn.Module):
         nodevec2 = torch.tanh(self.alpha*self.lin2(self.variable2.to(x.device)))
         a = torch.mm(nodevec1, nodevec2.transpose(1,0))-torch.mm(nodevec2, nodevec1.transpose(1,0))
         a_adjust = F.relu(torch.tanh(self.alpha*a))
-        #保存a_adjust
-        # np.savetxt('/data/dengtianze/PatchTST/PatchTST_supervised/test_results/a_adjust.txt', a_adjust.cpu().detach().numpy(), fmt='%.6f')
 
         x1 = self.nconv(x,a_adjust)
         out.append(x1)
@@ -59,9 +57,6 @@ class TransformerLayer(nn.Module):
     def forward(self, x,x_external):
         # Self-attention
         attn_output, extract_attention = self.self_attn(x, x_external, x_external)
-        # 保存第二阶段的attention [768, 1, 6] -> [64, 12, 6]
-        # extract_attention = extract_attention.view(64, 12, 6).mean(dim=0)
-        # np.savetxt('/data/dengtianze/PatchTST/PatchTST_supervised/test_results/extract_attention.txt', extract_attention.cpu().detach().numpy(), fmt='%.6f')
         x = x + attn_output
         x = self.norm1(x)
         
@@ -89,7 +84,7 @@ class Extract_Variable_Dependecnce(nn.Module):
         B,_,L,C = x_target.shape
         x_external = x_external.permute(0,2,1,3).reshape(B*L,M,C)
         x_target = x_target.permute(0,2,1,3).reshape(B*L,_,C)
-        #在 nn.MultiheadAttention 中，期望的输入张量的形状应为 (seq_len, batch_size, embed_dim)
+        
         x_external = x_external.permute(1, 0, 2)
         x_target = x_target.permute(1, 0, 2)
         for layer in self.layers:
@@ -109,18 +104,17 @@ class LSTMModel(nn.Module):
         x: B M patch_num patch_len
         out: B M d_model
         '''
-        # 因为LSTM的输入只能是三维的，所以先把x做个reshape，变成三维，输出时候再reshape回来
+        # reshape
         B,M,L,C =x.shape
         x = x.reshape(B*M,L,C) # B M patch_num patch_len -> B*M patch_num patch_len
         h0 = torch.zeros(self.num_layers, x.size(0), self.d_model).to(x.device)
         c0 = torch.zeros(self.num_layers, x.size(0), self.d_model).to(x.device)
         out, _ = self.lstm(x, (h0, c0)) # B M patch_num d_model
-        out = out.reshape(B,M,L,self.d_model) # out 是lstm最后一层所有时间步的hidden
+        out = out.reshape(B,M,L,self.d_model) 
         return out
 
 class Model(nn.Module):
     def __init__(self, configs):
-        # 这个代码目前只能做seq_len = pred_len
         super().__init__()
         self.seq_len = configs.seq_len
         self.pred_len = configs.pred_len
@@ -143,37 +137,31 @@ class Model(nn.Module):
         # 4 预测
         self.fc = nn.Linear(self.seq_len+self.d_model,self.pred_len)
     def forward(self, input):       
-        # 这个代码目前只能做seq_len = pred_len
         '''
         input: [Batch, Sequence Length, Multi-Variables]
         out: [Batch, Sequence Length, Single-Variable]
         '''
         
         B, L, M = input.shape
-        # 1.0 对x进行patch，[B,L,M]->[B,M,patch_num,patch_len]，多了一个通道维度，方便LSTM学习 
+        # 1.0 对x进行patch
         x = input.permute(0,2,1) # [B, L, M] -> [B, M, L]
-        x = x.reshape(B,M,self.patch_num,self.patch_len) # 通过patch增加通道维度： [B, M ,Sequence Length] -> [B, M, patch_num, patch_len]
+        x = x.reshape(B,M,self.patch_num,self.patch_len) 
         # 1.1 使用共享的 LSTM 对 内部变量 和 外部变量 做时序特征提取
         lstm_out = self.lstm(x) # [B,M,L',d_model]
-        x_external = lstm_out[:,:-1,:,:] # 前M-1个变量是外部变量 [B,M-1,L',d_model]
-        x_target = lstm_out[:,-1:,:,:] # 第M个变量是目标变量 [B,1,L',d_model]
+        x_external = lstm_out[:,:-1,:,:] 
+        x_target = lstm_out[:,-1:,:,:] 
         # 1.2 使用注意力机制，内部变量作为query，外部变量作为key和value
         patch_out = self.extract_variable_dependence(x_target,x_external) # [Batch, L', d_model]
         # print('patch_out shape: [Batch, L, d_model]', patch_out.shape)
-
 
         # 2.1 使用Linear对变量进行编码
         x = input.permute(0,2,1) # B M L
         x = self.linear(x) # B M d_model
         # 2.2 gnn交互，并取出最后一维目标变量
         gnn_out = self.gnn(x)[:,-1:,:] # B M d_model 取target变量： B 1 d_model
-        # print('gnn_out shape: [Batch, M, d_model]', gnn_out.shape)
         # 3 cross attention 逐段学习
         fusion_out, integration_attention = self.cross_attn(gnn_out.permute(1,0,2), patch_out.permute(1,0,2),patch_out.permute(1,0,2))
-        # 保存第三阶段的attention [64, 1, 12] -> [1, 12]
-        # integration_attention = integration_attention.mean(dim=0)
-        # np.savetxt('/data/dengtianze/PatchTST/PatchTST_supervised/test_results/integration_attention.txt', integration_attention.cpu().detach().numpy(), fmt='%.6f')
-        
+       
         # 4. 为了调效果，把目标变量的历史加上表征，做了一个残差然后线性层映射
         out = fusion_out.permute(1,0,2) # -> B 1 d_model 
         out = self.fc(torch.cat([torch.tanh(out),input[:,:,-1:].permute(0,2,1)],dim=-1)).permute(0,2,1) # [Batch, T, 1]
