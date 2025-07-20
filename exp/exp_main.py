@@ -1,9 +1,9 @@
 from data_provider.data_factory import data_provider
 from exp.exp_basic import Exp_Basic
 from models import Informer, Autoformer, Transformer, DLinear, Linear, NLinear, PatchTST, FEDformer, iTransformer, \
-    Crossformer, DengTST, DengTST_nognn, DengTST_nopatch, TimesNet, Reformer, Koopa, MambaSimple, FreTS, ETSformer, \
-    FiLM, Pyraformer, TiDE, SegRNN, MICN, Nonstationary_Transformer, DengTST_patchgnnlinear, DengTST_patchgnnweightedaveraging, \
-    model_1, CTNETTST, TimeMixer, simpleattentionTST, TimeXer, RAD_FEDformer, MLPTST
+    Crossformer, PVDSFTST, TimesNet, Reformer, Koopa, MambaSimple, FreTS, ETSformer, \
+    FiLM, Pyraformer, TiDE, SegRNN, MICN, Nonstationary_Transformer, \
+    model_1, CTNETTST, TimeMixer, simpleattentionTST, TimeXer,
 from utils.tools import EarlyStopping, adjust_learning_rate, visual, test_params_flop
 from utils.metrics import metric
 
@@ -38,9 +38,7 @@ class Exp_Main(Exp_Basic):
             'FEDformer': FEDformer,
             'iTransformer': iTransformer,
             'Crossformer': Crossformer,
-            'DengTST': DengTST,
-            'DengTST_nognn': DengTST_nognn,
-            'DengTST_nopatch': DengTST_nopatch,
+            'PVDSFTST': PVDSFTST,
             'TimesNet': TimesNet,
             'Reformer': Reformer,
             'Koopa': Koopa,
@@ -53,15 +51,11 @@ class Exp_Main(Exp_Basic):
             'SegRNN': SegRNN,
             'MICN': MICN,
             'Nonstationary_Transformer': Nonstationary_Transformer,
-            'DengTST_patchgnnlinear': DengTST_patchgnnlinear,
-            'DengTST_patchgnnweightedaveraging': DengTST_patchgnnweightedaveraging,
             'model_1': model_1,
             'CTNETTST': CTNETTST,
             'TimeMixer': TimeMixer,
             'simpleattentionTST': simpleattentionTST,
-            'TimeXer': TimeXer,
-            'RAD_FEDformer': RAD_FEDformer,
-            'MLPTST': MLPTST
+            'TimeXer': TimeXer
         }
         model = model_dict[self.args.model].Model(self.args).float()
 
