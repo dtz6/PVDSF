@@ -162,7 +162,7 @@ class Model(nn.Module):
         # 3 cross attention 逐段学习
         fusion_out, integration_attention = self.cross_attn(gnn_out.permute(1,0,2), patch_out.permute(1,0,2),patch_out.permute(1,0,2))
        
-        # 4. 为了调效果，把目标变量的历史加上表征，做了一个残差然后线性层映射
+        # 4. 目标变量历史加上表征，残差然后线性层映射
         out = fusion_out.permute(1,0,2) # -> B 1 d_model 
         out = self.fc(torch.cat([torch.tanh(out),input[:,:,-1:].permute(0,2,1)],dim=-1)).permute(0,2,1) # [Batch, T, 1]
         return out 
