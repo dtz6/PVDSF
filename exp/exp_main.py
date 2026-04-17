@@ -1,9 +1,6 @@
 from data_provider.data_factory import data_provider
 from exp.exp_basic import Exp_Basic
-from models import Informer, Autoformer, Transformer, DLinear, Linear, NLinear, PatchTST, FEDformer, iTransformer, \
-    Crossformer, PVDSFTST, TimesNet, Reformer, Koopa, MambaSimple, FreTS, ETSformer, \
-    FiLM, Pyraformer, TiDE, SegRNN, MICN, Nonstationary_Transformer, \
-    model_1, CTNETTST, TimeMixer, simpleattentionTST, TimeXer,
+from models import PVDSFTST
 from utils.tools import EarlyStopping, adjust_learning_rate, visual, test_params_flop
 from utils.metrics import metric
 
@@ -28,34 +25,7 @@ class Exp_Main(Exp_Basic):
 
     def _build_model(self):
         model_dict = {
-            'Autoformer': Autoformer,
-            'Transformer': Transformer,
-            'Informer': Informer,
-            'DLinear': DLinear,
-            'NLinear': NLinear,
-            'Linear': Linear,
-            'PatchTST': PatchTST,
-            'FEDformer': FEDformer,
-            'iTransformer': iTransformer,
-            'Crossformer': Crossformer,
-            'PVDSFTST': PVDSFTST,
-            'TimesNet': TimesNet,
-            'Reformer': Reformer,
-            'Koopa': Koopa,
-            'MambaSimple': MambaSimple,
-            'FreTS': FreTS,
-            'ETSformer': ETSformer,
-            'FiLM': FiLM,
-            'Pyraformer': Pyraformer,
-            'TiDE': TiDE,
-            'SegRNN': SegRNN,
-            'MICN': MICN,
-            'Nonstationary_Transformer': Nonstationary_Transformer,
-            'model_1': model_1,
-            'CTNETTST': CTNETTST,
-            'TimeMixer': TimeMixer,
-            'simpleattentionTST': simpleattentionTST,
-            'TimeXer': TimeXer
+            'PVDSFTST': PVDSFTST
         }
         model = model_dict[self.args.model].Model(self.args).float()
 
