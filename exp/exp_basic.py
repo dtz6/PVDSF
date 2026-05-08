@@ -1,13 +1,13 @@
 import os
 import torch
-from models import PVDSFTST
+from models import PVDSF
 
 
 class Exp_Basic(object):
     def __init__(self, args):
         self.args = args
         self.model_dict = {
-            'PVDSFTST': PVDSFTST
+            'PVDSF': PVDSF
         }
 
         self.device = self._acquire_device()
